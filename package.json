@@ -1,0 +1,19 @@
+{
+  "name": "escape-room-sim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Escape Room Simulator — gothic castle graybox (v1 scaffold)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node test/timer-and-gates.test.js"
+  },
+  "dependencies": {
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10"
+  }
+}

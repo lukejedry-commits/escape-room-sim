@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Escape Room Simulator</title>
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game"></canvas>
+      <div id="hud">
+        <div id="chapter-cue">Chapter 1 · Hall</div>
+        <div id="timer">01:00:00</div>
+        <div id="overtime-penalty" class="hidden">Overtime penalty: 0</div>
+        <div id="crosshair">+</div>
+        <div id="inspect-hint" class="hidden"></div>
+        <div id="pause-overlay" class="hidden">
+          <div class="pause-panel">
+            <h1>Paused</h1>
+            <p>Press Esc to resume</p>
+          </div>
+        </div>
+        <div id="hotbar" aria-label="Inventory hotbar">
+          <div class="slot empty" data-slot="0"></div>
+          <div class="slot empty" data-slot="1"></div>
+          <div class="slot empty" data-slot="2"></div>
+          <div class="slot empty" data-slot="3"></div>
+          <div class="slot empty" data-slot="4"></div>
+        </div>
+        <div id="click-prompt" class="hidden">Click to enter · WASD move · mouse look · Esc pause</div>
+      </div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

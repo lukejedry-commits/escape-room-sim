@@ -1,0 +1,144 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #1a1820;
+  color: #e8e0d4;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: none;
+}
+
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#chapter-cue {
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.35rem 1rem;
+  border: 1px solid rgba(196, 184, 164, 0.35);
+  background: rgba(26, 24, 32, 0.72);
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+#timer {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+#overtime-penalty {
+  position: absolute;
+  top: 2.75rem;
+  right: 1.25rem;
+  font-size: 0.75rem;
+  color: #c4785a;
+}
+
+#crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.1rem;
+  opacity: 0.55;
+  user-select: none;
+}
+
+#inspect-hint {
+  position: absolute;
+  bottom: 6.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.9rem;
+  background: rgba(26, 24, 32, 0.8);
+  border: 1px solid rgba(107, 74, 46, 0.6);
+  font-size: 0.8rem;
+}
+
+#hotbar {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.4rem;
+}
+
+#hotbar .slot {
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgba(196, 184, 164, 0.4);
+  background: rgba(26, 24, 32, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #c4b8a4;
+}
+
+#hotbar .slot.filled {
+  border-color: #6b4a2e;
+  color: #e8c9a0;
+}
+
+#pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 8, 14, 0.72);
+  pointer-events: auto;
+}
+
+#pause-overlay .pause-panel {
+  text-align: center;
+  padding: 2rem 3rem;
+  border: 1px solid rgba(196, 184, 164, 0.35);
+  background: rgba(26, 24, 32, 0.9);
+}
+
+#pause-overlay h1 {
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.75rem;
+}
+
+#click-prompt {
+  position: absolute;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  opacity: 0.85;
+  text-align: center;
+  max-width: 90vw;
+}
+
+.hidden {
+  display: none !important;
+}
