@@ -3,17 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Escape Room Simulator — gothic castle graybox (v1 scaffold)",
+  "description": "The Oathbound Keep \u2014 Escape Room Simulator gothic graybox (v1 scaffold)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/timer-and-gates.test.js"
+    "test": "node test/timer-and-gates.test.js",
+    "capture:graybox": "node scripts/capture-graybox.mjs"
   },
   "dependencies": {
     "three": "^0.169.0"
   },
   "devDependencies": {
+    "puppeteer-core": "^23.11.1",
     "vite": "^5.4.10"
   }
 }

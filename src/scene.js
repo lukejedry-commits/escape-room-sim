@@ -1,14 +1,15 @@
 import * as THREE from 'three';
-import { COLORS } from './materials.js';
+import { COLORS, flameColorForOvertime } from './materials.js';
+import { CHAPTERS } from './chapters.js';
 
 /**
  * Gothic castle graybox: limestone walls, slate floor,
- * bronze lock prop, four stage candles.
+ * bronze lock prop, iron key, four stage candles.
  */
 export function buildGrayboxScene() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(COLORS.fog);
-  scene.fog = new THREE.FogExp2(COLORS.fog, 0.045);
+  scene.fog = new THREE.FogExp2(COLORS.fog, 0.02);
 
   const limestoneMat = new THREE.MeshStandardMaterial({
     color: COLORS.limestone,
@@ -24,6 +25,11 @@ export function buildGrayboxScene() {
     color: COLORS.bronze,
     roughness: 0.55,
     metalness: 0.65,
+  });
+  const ironMat = new THREE.MeshStandardMaterial({
+    color: COLORS.iron,
+    roughness: 0.7,
+    metalness: 0.9,
   });
 
   // Floor
@@ -83,22 +89,17 @@ export function buildGrayboxScene() {
   lockGroup.position.set(0, 1.2, -7.6);
   scene.add(lockGroup);
 
-  // Placeholder key on a pedestal (pickable)
-  const keyMat = new THREE.MeshStandardMaterial({
-    color: COLORS.bronze,
-    roughness: 0.4,
-    metalness: 0.7,
-  });
+  // Placeholder iron key on a pedestal (pickable)
   const keyGroup = new THREE.Group();
   keyGroup.name = 'placeholder-key';
   keyGroup.userData.inspectable = true;
   keyGroup.userData.pickable = true;
   keyGroup.userData.label = 'Old iron key';
   keyGroup.userData.kind = 'key';
-  const keyShaft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.35), keyMat);
-  const keyBow = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.025, 6, 12), keyMat);
+  const keyShaft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.35), ironMat);
+  const keyBow = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.025, 6, 12), ironMat);
   keyBow.position.z = 0.2;
-  const keyBit = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.06), keyMat);
+  const keyBit = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.06), ironMat);
   keyBit.position.set(0.06, 0, -0.14);
   keyGroup.add(keyShaft, keyBow, keyBit);
   keyGroup.position.set(2.5, 0.85, -2);
@@ -118,51 +119,90 @@ export function buildGrayboxScene() {
     group.name = `candle-${i}`;
     group.userData.candleIndex = i;
     group.userData.inspectable = true;
-    group.userData.label = `Stage candle ${i + 1}`;
+    group.userData.label = CHAPTERS[i]?.title
+      ? `Candle · ${CHAPTERS[i].title}`
+      : `Stage candle ${i + 1}`;
     group.userData.kind = 'candle';
 
-    const stick = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.04, 0.05, 0.55, 8),
-      new THREE.MeshStandardMaterial({ color: 0xd8c8a8, roughness: 0.85 })
+    // Dark body + pale wax tip
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045, 0.055, 0.42, 10),
+      new THREE.MeshStandardMaterial({ color: COLORS.candleBody, roughness: 0.9 })
     );
-    stick.position.y = 0.28;
+    body.position.y = 0.22;
+    body.name = 'body';
+
+    const wax = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.045, 0.18, 10),
+      new THREE.MeshStandardMaterial({ color: COLORS.candleWax, roughness: 0.75 })
+    );
+    wax.position.y = 0.5;
+    wax.name = 'wax';
 
     const wick = new THREE.Mesh(
       new THREE.SphereGeometry(0.035, 8, 8),
-      new THREE.MeshStandardMaterial({ color: COLORS.unlitWick, emissive: 0x000000 })
+      new THREE.MeshStandardMaterial({
+        color: COLORS.unlitWick,
+        emissive: 0x000000,
+        emissiveIntensity: 1,
+      })
     );
-    wick.position.y = 0.58;
+    wick.position.y = 0.62;
     wick.name = 'wick';
 
-    const flameLight = new THREE.PointLight(COLORS.candleKey, 0, 4, 2);
-    flameLight.position.y = 0.65;
+    // Point light ~1.0 only when that gate is cleared
+    const flameLight = new THREE.PointLight(COLORS.candleKey, 0, 5, 2);
+    flameLight.position.y = 0.7;
     flameLight.name = 'flame-light';
 
-    group.add(stick, wick, flameLight);
+    group.add(body, wax, wick, flameLight);
     group.position.set(candleXs[i], 1.1, -7.55);
     scene.add(group);
-    candles.push({ group, wick, flameLight, lit: false });
+    candles.push({ group, body, wax, wick, flameLight, lit: false });
   }
 
-  // Ambient + dim fill — low light budget for graybox
-  const amb = new THREE.AmbientLight(0x3a3540, 0.35);
+  // Cool moonlight + hemisphere — low light budget for graybox
+  const amb = new THREE.AmbientLight(0x2a3040, 0.15);
   scene.add(amb);
-  const fill = new THREE.DirectionalLight(0xb0a090, 0.25);
-  fill.position.set(2, 6, 3);
-  scene.add(fill);
+  const moon = new THREE.DirectionalLight(COLORS.moonlight, 0.3);
+  moon.position.set(-3, 8, 4);
+  moon.name = 'moonlight';
+  scene.add(moon);
+  const hemi = new THREE.HemisphereLight(COLORS.hemiSky, COLORS.hemiGround, 0.35);
+  hemi.name = 'hemisphere';
+  scene.add(hemi);
 
-  function setCandleLit(i, lit) {
+  function setCandleLit(i, lit, overtimeMs = 0) {
     const c = candles[i];
     if (!c) return;
     c.lit = !!lit;
-    c.wick.material.emissive.setHex(lit ? COLORS.litFlame : 0x000000);
-    c.wick.material.color.setHex(lit ? COLORS.litFlame : COLORS.unlitWick);
-    c.flameLight.intensity = lit ? 1.2 : 0;
+    if (lit) {
+      const flame = flameColorForOvertime(overtimeMs);
+      c.wick.material.emissive.setHex(flame);
+      c.wick.material.color.setHex(flame);
+      c.flameLight.color.setHex(flame);
+      c.flameLight.intensity = 1.0;
+    } else {
+      c.wick.material.emissive.setHex(0x000000);
+      c.wick.material.color.setHex(COLORS.unlitWick);
+      c.flameLight.intensity = 0;
+    }
   }
 
-  function syncCandlesFromGates(gates) {
+  function syncCandlesFromGates(gates, overtimeMs = 0) {
     for (let i = 0; i < candles.length; i++) {
-      setCandleLit(i, gates.isCleared(i));
+      setCandleLit(i, gates.isCleared(i), overtimeMs);
+    }
+  }
+
+  /** Update flame colours for already-lit candles as overtime progresses. */
+  function updateOvertimeFlames(overtimeMs) {
+    for (const c of candles) {
+      if (!c.lit) continue;
+      const flame = flameColorForOvertime(overtimeMs);
+      c.wick.material.emissive.setHex(flame);
+      c.wick.material.color.setHex(flame);
+      c.flameLight.color.setHex(flame);
     }
   }
 
@@ -173,8 +213,10 @@ export function buildGrayboxScene() {
     candles,
     setCandleLit,
     syncCandlesFromGates,
+    updateOvertimeFlames,
     limestoneMat,
     slateMat,
     bronzeMat,
+    ironMat,
   };
 }

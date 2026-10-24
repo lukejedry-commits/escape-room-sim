@@ -3,9 +3,14 @@ import { buildGrayboxScene } from './scene.js';
 import { createControls } from './controls.js';
 import { createTimer } from './timer.js';
 import { createGateSystem } from './gates.js';
+import { createInventory, makePlaceholderKey } from './inventory.js';
+import { chapterHudText } from './chapters.js';
+import { createInspectOverlay } from './inspect.js';
+
 export { createTimer } from './timer.js';
 export { createGateSystem } from './gates.js';
-import { createInventory, makePlaceholderKey } from './inventory.js';
+export { chapterHudText, currentChapterIndex, CHAPTERS } from './chapters.js';
+export { flameColorForOvertime, COLORS } from './materials.js';
 
 const canvas = document.getElementById('game');
 const chapterEl = document.getElementById('chapter-cue');
@@ -22,18 +27,49 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 80);
-const { scene, keyGroup, syncCandlesFromGates } = buildGrayboxScene();
+const { scene, syncCandlesFromGates, updateOvertimeFlames } = buildGrayboxScene();
 
 const controls = createControls(camera, canvas);
 const timer = createTimer();
 const gates = createGateSystem(4);
 const inventory = createInventory(5);
+const inspect = createInspectOverlay(renderer);
 
 let paused = false;
+/** True when pause was caused by tab-away / blur (auto-resume on focus). */
+let pausedByVisibility = false;
 let examining = false;
 let lastT = performance.now();
+let lastChapterText = '';
 
-chapterEl.textContent = 'Chapter 1 · Hall';
+/** Drop any wall-clock gap so resume never catch-up-ticks the soft timer. */
+function clearCatchUp(now = performance.now()) {
+  lastT = now;
+}
+
+function showChapterCue(text, { fade = true } = {}) {
+  if (text === lastChapterText) return;
+  lastChapterText = text;
+  chapterEl.textContent = text;
+  if (!fade) {
+    chapterEl.classList.remove('chapter-fade');
+    chapterEl.style.animation = 'none';
+    chapterEl.style.opacity = '0.7';
+    return;
+  }
+  chapterEl.style.animation = 'none';
+  void chapterEl.offsetWidth;
+  chapterEl.style.animation = '';
+  chapterEl.classList.remove('chapter-fade');
+  void chapterEl.offsetWidth;
+  chapterEl.classList.add('chapter-fade');
+}
+
+function refreshChapterHud({ fade = true } = {}) {
+  showChapterCue(chapterHudText(gates), { fade });
+}
+
+refreshChapterHud({ fade: true });
 clickPrompt.classList.remove('hidden');
 
 const raycaster = new THREE.Raycaster();
@@ -75,21 +111,54 @@ function renderHotbar() {
   });
 }
 
-function setPaused(next) {
-  paused = next;
+function setPaused(next, { fromVisibility = false } = {}) {
+  const was = paused;
+  paused = !!next;
+  if (fromVisibility) {
+    if (paused) pausedByVisibility = true;
+    else pausedByVisibility = false;
+  } else if (paused) {
+    // Manual Esc pause — do not auto-resume on focus
+    pausedByVisibility = false;
+  }
   timer.setPaused(paused);
   controls.setEnabled(!paused && !examining);
-  pauseOverlay.classList.toggle('hidden', !paused);
-  if (paused) controls.exitLock();
+  pauseOverlay.classList.toggle('hidden', !paused || examining);
+  if (paused) {
+    controls.exitLock();
+  }
+  // Resume always clears catch-up so a long tab-away cannot dump dt into the timer
+  if (was && !paused) {
+    clearCatchUp();
+  }
 }
 
 function setExamining(next) {
-  examining = next;
+  examining = !!next;
   timer.setExamining(examining);
   controls.setEnabled(!paused && !examining);
+  if (examining) {
+    controls.exitLock();
+    pauseOverlay.classList.add('hidden');
+  }
+}
+
+function closeInspect() {
+  if (!inspect.active) return;
+  inspect.close();
+  setExamining(false);
+  inspectHint.classList.add('hidden');
+}
+
+function openInspect(target) {
+  inspect.open(target);
+  setExamining(true);
+  inspectHint.textContent = `${target.userData.label || target.name} · drag to orbit · Esc to close`;
+  inspectHint.classList.remove('hidden');
 }
 
 function tryInspect() {
+  if (inspect.active) return;
   const hit = getLookTarget();
   if (!hit || hit.distance > 3.5) return;
 
@@ -104,39 +173,52 @@ function tryInspect() {
       renderHotbar();
       inspectHint.textContent = 'Picked up: Old iron key';
       inspectHint.classList.remove('hidden');
-      setTimeout(() => inspectHint.classList.add('hidden'), 1800);
+      setTimeout(() => {
+        if (!inspect.active) inspectHint.classList.add('hidden');
+      }, 1800);
     }
     return;
   }
 
-  // Click-to-inspect freezes the soft timer briefly while the cue shows
-  setExamining(true);
-  inspectHint.textContent = `Inspecting: ${target.userData.label || target.name}`;
-  inspectHint.classList.remove('hidden');
-  setTimeout(() => {
-    inspectHint.classList.add('hidden');
-    setExamining(false);
-  }, 900);
+  openInspect(target);
 }
 
 /** Stub exposed for design / console testing. */
 window.clearGate = function clearGate(i) {
   const ok = gates.clearGate(i);
-  if (ok) syncCandlesFromGates(gates);
+  if (ok) {
+    syncCandlesFromGates(gates, timer.overtimeMs);
+    refreshChapterHud({ fade: true });
+  }
   return ok;
 };
 
-window.__escapeRoom = { timer, gates, inventory, setPaused };
+window.__escapeRoom = {
+  timer,
+  gates,
+  inventory,
+  setPaused,
+  clearCatchUp,
+  refreshChapterHud,
+  camera,
+  controls,
+  inspect,
+};
 
 function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(w, h);
+  inspect.resize(w, h);
 }
 window.addEventListener('resize', onResize);
+inspect.resize(window.innerWidth, window.innerHeight);
 
 canvas.addEventListener('click', () => {
   if (paused) return;
+  if (inspect.active) return;
   if (!controls.pointerLocked) {
     controls.requestLock();
     clickPrompt.classList.add('hidden');
@@ -145,14 +227,48 @@ canvas.addEventListener('click', () => {
   tryInspect();
 });
 
+canvas.addEventListener('pointerdown', (e) => inspect.onPointerDown(e));
+window.addEventListener('pointermove', (e) => inspect.onPointerMove(e));
+window.addEventListener('pointerup', () => inspect.onPointerUp());
+
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
     e.preventDefault();
-    setPaused(!paused);
+    if (inspect.active) {
+      closeInspect();
+      return;
+    }
+    setPaused(!paused, { fromVisibility: false });
   }
-  // Digits select hotbar slots
   if (e.code >= 'Digit1' && e.code <= 'Digit5') {
     inventory.setSelected(Number(e.code.slice(-1)) - 1);
+  }
+});
+
+/**
+ * Tab-away / blur: pause through the same setPaused path.
+ * Timer must not run while the tab is hidden. Resume clears catch-up.
+ */
+function onVisibilityOrFocusChange() {
+  if (document.hidden) {
+    setPaused(true, { fromVisibility: true });
+    return;
+  }
+  // Visible again: clear catch-up always; auto-resume only if we paused for the tab
+  clearCatchUp();
+  if (pausedByVisibility) {
+    setPaused(false, { fromVisibility: true });
+  }
+}
+
+document.addEventListener('visibilitychange', onVisibilityOrFocusChange);
+window.addEventListener('blur', () => {
+  setPaused(true, { fromVisibility: true });
+});
+window.addEventListener('focus', () => {
+  clearCatchUp();
+  if (pausedByVisibility && !document.hidden) {
+    setPaused(false, { fromVisibility: true });
   }
 });
 
@@ -173,8 +289,7 @@ function updateHud() {
       inspectHint.textContent = `${action}: ${label}`;
       inspectHint.classList.remove('hidden');
     } else if (!examining) {
-      // don't hide mid-inspect timeout message unless empty look
-      if (!inspectHint.textContent.startsWith('Inspecting') && !inspectHint.textContent.startsWith('Picked')) {
+      if (!inspectHint.textContent.startsWith('Picked')) {
         inspectHint.classList.add('hidden');
       }
     }
@@ -186,16 +301,24 @@ function frame(now) {
   lastT = now;
   const dt = Math.min(dtMs / 1000, 0.05);
 
+  // Soft timer: never advances while paused or examining (inspect freezes it)
   timer.tick(dtMs);
   if (!paused && !examining) {
     controls.update(dt);
   }
 
+  if (timer.isOvertime) {
+    updateOvertimeFlames(timer.overtimeMs);
+  }
+
   updateHud();
-  renderer.render(scene, camera);
+
+  if (!inspect.render()) {
+    renderer.render(scene, camera);
+  }
   requestAnimationFrame(frame);
 }
 
 renderHotbar();
-syncCandlesFromGates(gates);
+syncCandlesFromGates(gates, 0);
 requestAnimationFrame(frame);
