@@ -14,7 +14,7 @@ export { chapterHudText, currentChapterIndex, CHAPTERS } from './chapters.js';
 export { flameColorForOvertime, COLORS } from './materials.js';
 
 /** Bump when collision/interact systems change so playtesters can confirm cache. */
-const BUILD_ID = '32c3265';
+const BUILD_ID = '69f0729';
 
 const canvas = document.getElementById('game');
 const chapterEl = document.getElementById('chapter-cue');
