@@ -211,6 +211,8 @@ export function buildGrayboxScene() {
     lockGroup,
     keyGroup,
     candles,
+    moon,
+    hemi,
     setCandleLit,
     syncCandlesFromGates,
     updateOvertimeFlames,

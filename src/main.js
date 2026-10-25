@@ -14,7 +14,7 @@ export { chapterHudText, currentChapterIndex, CHAPTERS } from './chapters.js';
 export { flameColorForOvertime, COLORS } from './materials.js';
 
 /** Bump when collision/interact systems change so playtesters can confirm cache. */
-const BUILD_ID = 'pause-1';
+const BUILD_ID = 'pause-2';
 
 const canvas = document.getElementById('game');
 const chapterEl = document.getElementById('chapter-cue');
@@ -39,7 +39,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 80);
-const { scene, syncCandlesFromGates, updateOvertimeFlames } = buildGrayboxScene();
+const { scene, candles, moon, syncCandlesFromGates, updateOvertimeFlames } = buildGrayboxScene();
+const MOON_BASE = moon.intensity;
 
 const wallColliders = collidersFromScene(scene);
 const controls = createControls(camera, canvas, wallColliders);
@@ -64,10 +65,27 @@ let pausedByVisibility = false;
 let examining = false;
 let lastT = performance.now();
 let lastChapterText = '';
+/** 0 = live look, 1 = paused dim (Graphics recipe). */
+let pauseLook = 0;
+const PAUSE_LOOK_EASE_MS = 150;
+const PAUSE_CANDLE_MUL = 0.4;
+const PAUSE_MOON_MUL = 0.55;
 
 /** Drop any wall-clock gap so resume never catch-up-ticks the soft timer. */
 function clearCatchUp(now = performance.now()) {
   lastT = now;
+}
+
+function candleBaseIntensity(c) {
+  return c.lit ? 1.0 : 0;
+}
+
+function applyPauseLook(amount) {
+  pauseLook = amount;
+  for (const c of candles) {
+    c.flameLight.intensity = candleBaseIntensity(c) * (1 - (1 - PAUSE_CANDLE_MUL) * amount);
+  }
+  moon.intensity = MOON_BASE * (1 - (1 - PAUSE_MOON_MUL) * amount);
 }
 
 function showChapterCue(text, { fade = true } = {}) {
@@ -291,18 +309,31 @@ window.addEventListener('pointermove', (e) => inspect.onPointerMove(e));
 window.addEventListener('pointerup', () => inspect.onPointerUp());
 
 document.addEventListener('keydown', (e) => {
-  if (e.code === 'Escape') {
+  // P toggles pause (Esc drops pointer lock in browsers — do not bind pause to Esc)
+  if (e.code === 'KeyP') {
+    if (isOnTitle()) return;
+    if (inspect.active) return;
     e.preventDefault();
+    if (paused && !pausedByVisibility) {
+      setPaused(false, { fromVisibility: false });
+    } else if (!paused) {
+      openPauseMenu();
+    }
+    return;
+  }
+  if (e.code === 'Escape') {
     if (isOnTitle()) return;
     if (inspect.active) {
+      e.preventDefault();
       closeInspect();
       return;
     }
-    if (paused && !pausedByVisibility) {
+    // While pause menu is open, Esc resumes (per Lead). Otherwise let browser unlock pointer.
+    if (paused && !pausedByVisibility && !isOnTitle()) {
+      e.preventDefault();
       setPaused(false, { fromVisibility: false });
-    } else {
-      openPauseMenu();
     }
+    return;
   }
   if (e.code >= 'Digit1' && e.code <= 'Digit8') {
     inventory.setSelected(Number(e.code.slice(-1)) - 1);
@@ -371,7 +402,17 @@ function frame(now) {
     controls.update(dt);
   }
 
-  if (timer.isOvertime) {
+  // Graphics pause recipe: ease candle/moon dim ~150ms; fog/hemi unchanged
+  const pauseTarget = paused && !examining && !isOnTitle() ? 1 : 0;
+  if (pauseLook !== pauseTarget) {
+    const step = Math.min(1, (dtMs > 0 ? dtMs : 16) / PAUSE_LOOK_EASE_MS);
+    if (pauseLook < pauseTarget) pauseLook = Math.min(pauseTarget, pauseLook + step);
+    else pauseLook = Math.max(pauseTarget, pauseLook - step);
+    applyPauseLook(pauseLook);
+  }
+
+  // Freeze overtime tint while paused (don't ramp)
+  if (timer.isOvertime && !paused) {
     updateOvertimeFlames(timer.overtimeMs);
   }
 
@@ -399,6 +440,7 @@ btnEnter?.addEventListener('click', () => {
 
 renderHotbar();
 syncCandlesFromGates(gates, 0);
+applyPauseLook(0);
 // Start on title so the soft timer does not run until Enter the Keep
 showTitle();
 requestAnimationFrame(frame);

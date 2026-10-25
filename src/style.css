@@ -129,15 +129,16 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 8, 14, 0.72);
+  background: rgba(8, 6, 10, 0.72);
   pointer-events: auto;
+  /* no backdrop-filter — Low budget */
 }
 
 #pause-overlay .pause-panel,
 #title-overlay .title-panel {
   text-align: center;
   padding: 2rem 3rem;
-  border: 1px solid rgba(196, 184, 164, 0.35);
+  border: 1px solid rgba(138, 112, 64, 0.55);
   background: rgba(26, 24, 32, 0.92);
   min-width: 16rem;
 }
