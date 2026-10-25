@@ -14,7 +14,7 @@ export { chapterHudText, currentChapterIndex, CHAPTERS } from './chapters.js';
 export { flameColorForOvertime, COLORS } from './materials.js';
 
 /** Bump when collision/interact systems change so playtesters can confirm cache. */
-const BUILD_ID = 'colliders-3';
+const BUILD_ID = 'pause-1';
 
 const canvas = document.getElementById('game');
 const chapterEl = document.getElementById('chapter-cue');
@@ -26,6 +26,12 @@ const clickPrompt = document.getElementById('click-prompt');
 const hotbarEl = document.getElementById('hotbar');
 const buildEl = document.getElementById('build-id');
 if (buildEl) buildEl.textContent = BUILD_ID;
+const titleOverlay = document.getElementById('title-overlay');
+const btnResume = document.getElementById('btn-resume');
+const btnSettings = document.getElementById('btn-settings');
+const btnQuitTitle = document.getElementById('btn-quit-title');
+const btnEnter = document.getElementById('btn-enter');
+const settingsStub = document.getElementById('settings-stub');
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -140,7 +146,8 @@ function setPaused(next, { fromVisibility = false } = {}) {
   }
   timer.setPaused(paused);
   controls.setEnabled(!paused && !examining);
-  pauseOverlay.classList.toggle('hidden', !paused || examining);
+  const showPauseMenu = paused && !examining && !isOnTitle();
+  pauseOverlay.classList.toggle('hidden', !showPauseMenu);
   if (paused) {
     controls.exitLock();
   }
@@ -158,6 +165,36 @@ function setExamining(next) {
     controls.exitLock();
     pauseOverlay.classList.add('hidden');
   }
+}
+
+
+function isOnTitle() {
+  return titleOverlay && !titleOverlay.classList.contains('hidden');
+}
+
+function showTitle() {
+  closeInspect();
+  titleOverlay.classList.remove('hidden');
+  pauseOverlay.classList.add('hidden');
+  settingsStub?.classList.add('hidden');
+  clickPrompt.classList.add('hidden');
+  setPaused(true, { fromVisibility: false });
+  controls.exitLock();
+}
+
+function enterFromTitle() {
+  titleOverlay.classList.add('hidden');
+  pauseOverlay.classList.add('hidden');
+  settingsStub?.classList.add('hidden');
+  setPaused(false, { fromVisibility: false });
+  clickPrompt.classList.remove('hidden');
+  clearCatchUp();
+}
+
+function openPauseMenu() {
+  if (isOnTitle()) return;
+  settingsStub?.classList.add('hidden');
+  setPaused(true, { fromVisibility: false });
 }
 
 function closeInspect() {
@@ -223,6 +260,8 @@ window.__escapeRoom = {
   wallColliders,
   BUILD_ID,
   toggleColliderDebug,
+  showTitle,
+  enterFromTitle,
 };
 
 function onResize() {
@@ -254,11 +293,16 @@ window.addEventListener('pointerup', () => inspect.onPointerUp());
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
     e.preventDefault();
+    if (isOnTitle()) return;
     if (inspect.active) {
       closeInspect();
       return;
     }
-    setPaused(!paused, { fromVisibility: false });
+    if (paused && !pausedByVisibility) {
+      setPaused(false, { fromVisibility: false });
+    } else {
+      openPauseMenu();
+    }
   }
   if (e.code >= 'Digit1' && e.code <= 'Digit8') {
     inventory.setSelected(Number(e.code.slice(-1)) - 1);
@@ -339,6 +383,22 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+btnResume?.addEventListener('click', () => {
+  setPaused(false, { fromVisibility: false });
+  clickPrompt.classList.remove('hidden');
+});
+btnSettings?.addEventListener('click', () => {
+  settingsStub?.classList.toggle('hidden');
+});
+btnQuitTitle?.addEventListener('click', () => {
+  showTitle();
+});
+btnEnter?.addEventListener('click', () => {
+  enterFromTitle();
+});
+
 renderHotbar();
 syncCandlesFromGates(gates, 0);
+// Start on title so the soft timer does not run until Enter the Keep
+showTitle();
 requestAnimationFrame(frame);

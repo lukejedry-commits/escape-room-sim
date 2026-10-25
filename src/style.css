@@ -122,7 +122,8 @@ body,
   color: #e8c9a0;
 }
 
-#pause-overlay {
+#pause-overlay,
+#title-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -132,17 +133,71 @@ body,
   pointer-events: auto;
 }
 
-#pause-overlay .pause-panel {
+#pause-overlay .pause-panel,
+#title-overlay .title-panel {
   text-align: center;
   padding: 2rem 3rem;
   border: 1px solid rgba(196, 184, 164, 0.35);
-  background: rgba(26, 24, 32, 0.9);
+  background: rgba(26, 24, 32, 0.92);
+  min-width: 16rem;
 }
 
-#pause-overlay h1 {
+#pause-overlay h1,
+#title-overlay h1 {
   font-weight: 500;
   letter-spacing: 0.12em;
   margin-bottom: 0.75rem;
+}
+
+.title-sub {
+  opacity: 0.65;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.06em;
+}
+
+.pause-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 1rem 0 0.75rem;
+}
+
+.pause-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  font: inherit;
+  color: #e8e0d4;
+  background: rgba(40, 36, 48, 0.95);
+  border: 1px solid rgba(196, 184, 164, 0.45);
+  padding: 0.55rem 1.25rem;
+  letter-spacing: 0.08em;
+}
+
+.pause-btn:hover {
+  border-color: #8a7040;
+  color: #f0e6d4;
+}
+
+.pause-btn.primary {
+  border-color: #6b4a2e;
+  background: rgba(60, 42, 28, 0.55);
+}
+
+.pause-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.pause-hint {
+  font-size: 0.75rem;
+  opacity: 0.55;
+}
+
+.settings-stub {
+  font-size: 0.8rem;
+  color: #c4b8a4;
+  margin-top: 0.35rem;
 }
 
 #click-prompt {

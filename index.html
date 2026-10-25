@@ -19,7 +19,20 @@
         <div id="pause-overlay" class="hidden">
           <div class="pause-panel">
             <h1>Paused</h1>
-            <p>Press Esc to resume</p>
+            <div class="pause-actions">
+              <button type="button" id="btn-resume" class="pause-btn primary">Resume</button>
+              <button type="button" id="btn-settings" class="pause-btn">Settings</button>
+              <button type="button" id="btn-quit-title" class="pause-btn">Quit to Title</button>
+            </div>
+            <p id="settings-stub" class="settings-stub hidden">Settings coming soon</p>
+            <p class="pause-hint">Esc to resume</p>
+          </div>
+        </div>
+        <div id="title-overlay">
+          <div class="title-panel">
+            <h1>The Oathbound Keep</h1>
+            <p class="title-sub">Escape Room · Gothic graybox</p>
+            <button type="button" id="btn-enter" class="pause-btn primary">Enter the Keep</button>
           </div>
         </div>
         <div id="hotbar" aria-label="Inventory hotbar">
@@ -32,7 +45,7 @@
           <div class="slot empty" data-slot="6"></div>
           <div class="slot empty" data-slot="7"></div>
         </div>
-        <div id="click-prompt" class="hidden">Click to enter · WASD move · mouse look · Esc pause</div>
+        <div id="click-prompt" class="hidden">Click to look · WASD move · Esc pause</div>
       </div>
     </div>
     <script type="module" src="./src/main.js"></script>
