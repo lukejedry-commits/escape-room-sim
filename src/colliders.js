@@ -19,7 +19,7 @@ export function buildGrayboxColliders() {
     { minX: -hall - halfT, maxX: -hall + halfT, minZ: -hall, maxZ: hall, label: 'wall-w' },
     { minX: hall - halfT, maxX: hall + halfT, minZ: -hall, maxZ: hall, label: 'wall-e' },
   ];
-  const pillarHalf = 0.6;
+  const pillarHalf = 0.65; // slightly > mesh 0.6 so silhouette never ghosts
   for (const [x, z] of [
     [-4, -4],
     [4, -4],
@@ -44,9 +44,10 @@ export function buildGrayboxColliders() {
  * @param {number} radius
  * @param {Aabb[]} boxes
  */
-export function resolveCylinderAabbs(pos, radius, boxes) {
+export function resolveCylinderAabbs(pos, radius, boxes, passes = 2) {
   let x = pos.x;
   let z = pos.z;
+  for (let pass = 0; pass < passes; pass++) {
   for (const b of boxes) {
     const nearestX = Math.max(b.minX, Math.min(x, b.maxX));
     const nearestZ = Math.max(b.minZ, Math.min(z, b.maxZ));
@@ -73,6 +74,7 @@ export function resolveCylinderAabbs(pos, radius, boxes) {
     const push = (radius - dist) / dist;
     x += dx * push;
     z += dz * push;
+  }
   }
   return { x, z };
 }

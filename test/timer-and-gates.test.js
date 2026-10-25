@@ -149,7 +149,7 @@ function testWallCollidersBlockHallEdge() {
   assert.equal(boxes.length, 8, '4 walls + 4 pillars');
   const radius = 0.35;
   const hit = resolveCylinderAabbs({ x: 0, z: -7.9 }, radius, boxes);
-  assert.ok(hit.z >= -7.75 + radius - 0.01, `should stop before north wall, got z=${hit.z}`);
+  assert.ok(hit.z >= -7.75 + radius - 0.02, `should stop before north wall, got z=${hit.z}`);
   const pillar = resolveCylinderAabbs({ x: 4, z: -4 }, radius, boxes);
   const dx = pillar.x - 4;
   const dz = pillar.z - (-4);

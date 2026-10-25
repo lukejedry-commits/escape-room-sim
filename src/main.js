@@ -13,6 +13,9 @@ export { createGateSystem } from './gates.js';
 export { chapterHudText, currentChapterIndex, CHAPTERS } from './chapters.js';
 export { flameColorForOvertime, COLORS } from './materials.js';
 
+/** Bump when collision/interact systems change so playtesters can confirm cache. */
+const BUILD_ID = '32c3265';
+
 const canvas = document.getElementById('game');
 const chapterEl = document.getElementById('chapter-cue');
 const timerEl = document.getElementById('timer');
@@ -21,6 +24,8 @@ const pauseOverlay = document.getElementById('pause-overlay');
 const inspectHint = document.getElementById('inspect-hint');
 const clickPrompt = document.getElementById('click-prompt');
 const hotbarEl = document.getElementById('hotbar');
+const buildEl = document.getElementById('build-id');
+if (buildEl) buildEl.textContent = BUILD_ID;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -206,6 +211,7 @@ window.__escapeRoom = {
   controls,
   inspect,
   wallColliders,
+  BUILD_ID,
 };
 
 function onResize() {

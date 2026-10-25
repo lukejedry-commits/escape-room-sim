@@ -159,3 +159,13 @@ body,
 .hidden {
   display: none !important;
 }
+
+#build-id {
+  position: absolute;
+  bottom: 0.4rem;
+  right: 0.6rem;
+  font-size: 0.65rem;
+  opacity: 0.35;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
