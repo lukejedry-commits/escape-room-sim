@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { buildGrayboxScene } from './scene.js';
 import { createControls } from './controls.js';
-import { buildGrayboxColliders } from './colliders.js';
+import { collidersFromScene, createColliderDebugGroup } from './colliders.js';
 import { createTimer } from './timer.js';
 import { createGateSystem } from './gates.js';
 import { createInventory, makePlaceholderKey } from './inventory.js';
@@ -14,7 +14,7 @@ export { chapterHudText, currentChapterIndex, CHAPTERS } from './chapters.js';
 export { flameColorForOvertime, COLORS } from './materials.js';
 
 /** Bump when collision/interact systems change so playtesters can confirm cache. */
-const BUILD_ID = 'colliders-2';
+const BUILD_ID = 'colliders-3';
 
 const canvas = document.getElementById('game');
 const chapterEl = document.getElementById('chapter-cue');
@@ -35,8 +35,18 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 80);
 const { scene, syncCandlesFromGates, updateOvertimeFlames } = buildGrayboxScene();
 
-const wallColliders = buildGrayboxColliders();
+const wallColliders = collidersFromScene(scene);
 const controls = createControls(camera, canvas, wallColliders);
+let colliderDebug = null;
+function toggleColliderDebug() {
+  if (colliderDebug) {
+    scene.remove(colliderDebug);
+    colliderDebug = null;
+    return false;
+  }
+  colliderDebug = createColliderDebugGroup(wallColliders, scene);
+  return true;
+}
 const timer = createTimer();
 const gates = createGateSystem(4);
 const inventory = createInventory(8);
@@ -212,6 +222,7 @@ window.__escapeRoom = {
   inspect,
   wallColliders,
   BUILD_ID,
+  toggleColliderDebug,
 };
 
 function onResize() {

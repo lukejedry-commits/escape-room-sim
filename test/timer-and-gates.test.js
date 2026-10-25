@@ -8,7 +8,8 @@ import { createTimer, SESSION_MS, OVERTIME_PENALTY_INTERVAL_MS } from '../src/ti
 import { createGateSystem } from '../src/gates.js';
 import { chapterHudText, currentChapterIndex, CHAPTERS, ESCAPE_LABEL } from '../src/chapters.js';
 import { flameColorForOvertime, COLORS, OVERTIME_HOT_MS } from '../src/materials.js';
-import { buildGrayboxColliders, resolveCylinderAabbs } from '../src/colliders.js';
+import { buildGrayboxColliders, collidersFromScene, resolveCylinderAabbs } from '../src/colliders.js';
+import { buildGrayboxScene } from '../src/scene.js';
 import { createInventory } from '../src/inventory.js';
 
 function testTimerFreezeOnPause() {
@@ -157,6 +158,29 @@ function testWallCollidersBlockHallEdge() {
   console.log('PASS wall colliders block hall edge / pillar');
 }
 
+function testCollidersFromSceneMatchMeshes() {
+  const { scene } = buildGrayboxScene();
+  const boxes = collidersFromScene(scene);
+  const pillars = boxes.filter((b) => b.label === 'pillar');
+  const walls = boxes.filter((b) => b.label === 'wall');
+  assert.equal(walls.length, 4, 'four wall meshes');
+  assert.equal(pillars.length, 4, 'four pillar meshes');
+  assert.ok(boxes.some((b) => b.label === 'pedestal'), 'pedestal collider present');
+  // Continuous walk into pillar at (4,-4) using mesh-derived AABBs
+  const radius = 0.35;
+  let x = 4;
+  let z = -2.0;
+  const dt = 1 / 60;
+  const speed = 4.5;
+  for (let i = 0; i < 180; i++) {
+    z -= speed * dt;
+    ({ x, z } = resolveCylinderAabbs({ x, z }, radius, boxes));
+  }
+  const southFace = pillars.find((p) => p.minX > 0 && p.minZ < 0).maxZ;
+  assert.ok(z >= southFace + radius - 0.05, `mesh walk must stop at pillar face; z=${z} face=${southFace}`);
+  console.log('PASS collidersFromScene match meshes + walk-into-pillar');
+}
+
 function testHotbarDefaultEightSlots() {
   const inv = createInventory();
   assert.equal(inv.slots.length, 8);
@@ -173,5 +197,6 @@ testTabAwayNoCatchUp();
 testBlurPauseSamePath();
 testDefaultsMatchSpec();
 testWallCollidersBlockHallEdge();
+testCollidersFromSceneMatchMeshes();
 testHotbarDefaultEightSlots();
 console.log('All tests passed.');
