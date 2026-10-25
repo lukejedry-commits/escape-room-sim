@@ -1,9 +1,11 @@
 import * as THREE from 'three';
+import { resolveCylinderAabbs } from './colliders.js';
 
 /**
  * WASD + mouse look with pointer lock. First-person, no player mesh.
+ * Horizontal motion uses a cylinder sweep against static AABB wall boxes.
  */
-export function createControls(camera, domElement) {
+export function createControls(camera, domElement, colliders = []) {
   const velocity = new THREE.Vector3();
   const direction = new THREE.Vector3();
   const euler = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -13,6 +15,9 @@ export function createControls(camera, domElement) {
   let enabled = true;
   const speed = 4.5;
   const lookSensitivity = 0.002;
+  /** Horizontal capsule footprint (cylinder vs static boxes). */
+  const radius = 0.35;
+  let wallBoxes = Array.isArray(colliders) ? colliders : [];
 
   camera.position.set(0, 1.6, 5);
   camera.rotation.order = 'YXZ';
@@ -67,6 +72,10 @@ export function createControls(camera, domElement) {
     }
   }
 
+  function setColliders(boxes) {
+    wallBoxes = Array.isArray(boxes) ? boxes : [];
+  }
+
   function update(dt) {
     if (!enabled) return;
     direction.set(0, 0, 0);
@@ -88,9 +97,11 @@ export function createControls(camera, domElement) {
 
     camera.position.x += velocity.x * dt;
     camera.position.z += velocity.z * dt;
-    // Soft hall bounds
-    camera.position.x = THREE.MathUtils.clamp(camera.position.x, -7.2, 7.2);
-    camera.position.z = THREE.MathUtils.clamp(camera.position.z, -7.2, 7.2);
+    if (wallBoxes.length) {
+      const resolved = resolveCylinderAabbs(camera.position, radius, wallBoxes);
+      camera.position.x = resolved.x;
+      camera.position.z = resolved.z;
+    }
     camera.position.y = 1.6;
   }
 
@@ -106,9 +117,13 @@ export function createControls(camera, domElement) {
     requestLock,
     exitLock,
     setEnabled,
+    setColliders,
     dispose,
     get pointerLocked() {
       return pointerLocked;
+    },
+    get radius() {
+      return radius;
     },
   };
 }

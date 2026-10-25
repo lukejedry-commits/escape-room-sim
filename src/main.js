@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildGrayboxScene } from './scene.js';
 import { createControls } from './controls.js';
+import { buildGrayboxColliders } from './colliders.js';
 import { createTimer } from './timer.js';
 import { createGateSystem } from './gates.js';
 import { createInventory, makePlaceholderKey } from './inventory.js';
@@ -29,10 +30,11 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 80);
 const { scene, syncCandlesFromGates, updateOvertimeFlames } = buildGrayboxScene();
 
-const controls = createControls(camera, canvas);
+const wallColliders = buildGrayboxColliders();
+const controls = createControls(camera, canvas, wallColliders);
 const timer = createTimer();
 const gates = createGateSystem(4);
-const inventory = createInventory(5);
+const inventory = createInventory(8);
 const inspect = createInspectOverlay(renderer);
 
 let paused = false;
@@ -203,6 +205,7 @@ window.__escapeRoom = {
   camera,
   controls,
   inspect,
+  wallColliders,
 };
 
 function onResize() {
@@ -240,7 +243,7 @@ document.addEventListener('keydown', (e) => {
     }
     setPaused(!paused, { fromVisibility: false });
   }
-  if (e.code >= 'Digit1' && e.code <= 'Digit5') {
+  if (e.code >= 'Digit1' && e.code <= 'Digit8') {
     inventory.setSelected(Number(e.code.slice(-1)) - 1);
   }
 });

@@ -1,5 +1,5 @@
-/** Slim inventory hotbar (5 slots). Placeholder key can be picked up. */
-export function createInventory(slotCount = 5) {
+/** Slim inventory hotbar (8 slots). Placeholder key can be picked up. */
+export function createInventory(slotCount = 8) {
   const slots = Array.from({ length: slotCount }, () => null);
   let selected = 0;
 

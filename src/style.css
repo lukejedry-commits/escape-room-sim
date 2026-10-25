@@ -106,8 +106,8 @@ body,
 }
 
 #hotbar .slot {
-  width: 3rem;
-  height: 3rem;
+  width: 2.65rem;
+  height: 2.65rem;
   border: 1px solid rgba(196, 184, 164, 0.4);
   background: rgba(26, 24, 32, 0.75);
   display: flex;
